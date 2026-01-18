@@ -1,0 +1,99 @@
+{
+  "validation": {
+    "baseline_accuracy": 0.9295356371490281,
+    "tuned_accuracy": 0.9400647948164147
+  },
+  "train": {
+    "baseline": 0.9329734107166959,
+    "tuned": 0.9443919557295182
+  },
+  "test": {
+    "baseline": 0.9328438782120493,
+    "tuned": 0.944828330814079
+  },
+  "full_dataset": {
+    "baseline": 0.9329475025374133,
+    "tuned": 0.9444792364005442
+  },
+  "best_params": {
+    "moisture_bias": 2.796910002727695,
+    "humidity_bias": 0.9685015794648706
+  },
+  "history": [
+    {
+      "moisture_bias": 2.965429868602331,
+      "humidity_bias": -3.165652101338362,
+      "accuracy": 0.9289956803455723
+    },
+    {
+      "moisture_bias": 2.796910002727695,
+      "humidity_bias": 0.9685015794648706,
+      "accuracy": 0.9400647948164147
+    },
+    {
+      "moisture_bias": -0.5416724714640875,
+      "humidity_bias": -4.000250841819971,
+      "accuracy": 0.9092872570194385
+    },
+    {
+      "moisture_bias": -0.40751108034132777,
+      "humidity_bias": -1.662913888609781,
+      "accuracy": 0.9187365010799136
+    },
+    {
+      "moisture_bias": -3.5713318207805917,
+      "humidity_bias": 1.5088847294885301,
+      "accuracy": 0.8922786177105831
+    },
+    {
+      "moisture_bias": -4.435884209728997,
+      "humidity_bias": 2.2199877226682485,
+      "accuracy": 0.8836393088552916
+    },
+    {
+      "moisture_bias": 4.385527090157504,
+      "humidity_bias": -4.992212341589856,
+      "accuracy": 0.9111771058315334
+    },
+    {
+      "moisture_bias": 4.922115592912178,
+      "humidity_bias": 1.1748150962771664,
+      "accuracy": 0.9244060475161987
+    },
+    {
+      "moisture_bias": 1.1165316048828098,
+      "humidity_bias": -4.929336947802826,
+      "accuracy": 0.9206263498920086
+    },
+    {
+      "moisture_bias": -4.769375749585842,
+      "humidity_bias": 0.24774660258389236,
+      "accuracy": 0.8839092872570194
+    },
+    {
+      "moisture_bias": 1.682092346245991,
+      "humidity_bias": 5.0,
+      "accuracy": 0.9314254859611231
+    },
+    {
+      "moisture_bias": 1.7861293610289568,
+      "humidity_bias": 0.6947439548445491,
+      "accuracy": 0.9384449244060475
+    },
+    {
+      "moisture_bias": 3.9889848363188065,
+      "humidity_bias": 5.0,
+      "accuracy": 0.9241360691144709
+    },
+    {
+      "moisture_bias": -0.541136166777191,
+      "humidity_bias": 4.985728383892106,
+      "accuracy": 0.9165766738660908
+    },
+    {
+      "moisture_bias": 2.433782579217861,
+      "humidity_bias": 1.4689073372244241,
+      "accuracy": 0.9400647948164147
+    }
+  ]
+}
