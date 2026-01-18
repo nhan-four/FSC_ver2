@@ -1,0 +1,13 @@
+FUZZY SEMANTIC ENCODER EVALUATION
+=================================
+Accuracy:          93.28%
+F1-macro:          0.8454
+Precision (macro): 0.9054
+Recall (macro):     0.8128
+Avg Confidence:     0.8453
+
+SEMANTIC PAYLOAD (2-byte encoding)
+----------------------------------
+Bytes per sample:   2 bytes
+Total samples:      9262
+Total payload:      18524 bytes (18.09 KB)

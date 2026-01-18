@@ -1,0 +1,17 @@
+{
+  "total_samples": 46307,
+  "train_samples": 37045,
+  "test_samples": 9262,
+  "label_distribution": {
+    "nutrient_deficiency": 15036,
+    "fungal_risk": 11910,
+    "water_deficit_acidic": 6472,
+    "heat_stress": 5037,
+    "water_deficit_alkaline": 4035,
+    "acidic_soil": 2335,
+    "alkaline_soil": 1448,
+    "optimal": 34
+  },
+  "mean_confidence": 0.8306066536273956,
+  "median_confidence": 1.0
+}

@@ -56,11 +56,8 @@ def run_full_comparison():
         'awgn': {},
         'rayleigh': {},
         'rician': {'k_factor_db': 3.0},
-        'lora': {}  # Distance will be set per SNR
+        'lora': {}  # LoRa chỉ dùng snr_db, không cần config đặc biệt
     }
-    
-    # Fixed distance for LoRa (SNR được điều khiển bằng snr_db)
-    LORA_FIXED_DISTANCE = 500.0  # meters
     
     results = {}
     
@@ -77,15 +74,8 @@ def run_full_comparison():
         }
         
         for snr in snr_range:
-            # Special handling for LoRa
-            if ch_type == 'lora':
-                ch_kwargs = {
-                    'distance': LORA_FIXED_DISTANCE,
-                    'sf': 7,
-                    'tx_power': 14.0
-                }
-            else:
-                ch_kwargs = kwargs.copy()
+            # LoRa chỉ dùng snr_db, không cần kwargs đặc biệt
+            ch_kwargs = kwargs.copy()
             
             # Create system
             system = FuzSemComChannelSystem(

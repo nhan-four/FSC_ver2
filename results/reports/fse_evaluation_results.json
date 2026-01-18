@@ -1,0 +1,77 @@
+{
+  "accuracy": 0.9328438782120493,
+  "f1_macro": 0.8453866532405668,
+  "f1_weighted": 0.9311249062869905,
+  "precision_macro": 0.905364599682757,
+  "recall_macro": 0.8127900513874763,
+  "average_confidence": 0.8453310171617772,
+  "payload": {
+    "bytes_per_sample": 2,
+    "total_samples": 9262,
+    "total_payload_bytes": 18524,
+    "total_payload_kb": 18.09
+  },
+  "classification_report": {
+    "optimal": {
+      "precision": 1.0,
+      "recall": 0.5714285714285714,
+      "f1-score": 0.7272727272727273,
+      "support": 7.0
+    },
+    "nutrient_deficiency": {
+      "precision": 0.9924092409240924,
+      "recall": 1.0,
+      "f1-score": 0.9961901606758323,
+      "support": 3007.0
+    },
+    "fungal_risk": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2382.0
+    },
+    "water_deficit_acidic": {
+      "precision": 0.9000740192450037,
+      "recall": 0.938996138996139,
+      "f1-score": 0.9191232048374905,
+      "support": 1295.0
+    },
+    "water_deficit_alkaline": {
+      "precision": 0.7723169508525577,
+      "recall": 0.9541511771995044,
+      "f1-score": 0.8536585365853658,
+      "support": 807.0
+    },
+    "acidic_soil": {
+      "precision": 0.961764705882353,
+      "recall": 0.7002141327623126,
+      "f1-score": 0.8104089219330854,
+      "support": 467.0
+    },
+    "alkaline_soil": {
+      "precision": 0.8106796116504854,
+      "recall": 0.5758620689655173,
+      "f1-score": 0.6733870967741935,
+      "support": 290.0
+    },
+    "heat_stress": {
+      "precision": 0.805672268907563,
+      "recall": 0.7616683217477657,
+      "f1-score": 0.7830525778458397,
+      "support": 1007.0
+    },
+    "accuracy": 0.9328438782120493,
+    "macro avg": {
+      "precision": 0.905364599682757,
+      "recall": 0.8127900513874763,
+      "f1-score": 0.8453866532405668,
+      "support": 9262.0
+    },
+    "weighted avg": {
+      "precision": 0.934742323637946,
+      "recall": 0.9328438782120493,
+      "f1-score": 0.9311249062869905,
+      "support": 9262.0
+    }
+  }
+}

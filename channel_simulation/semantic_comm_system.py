@@ -205,7 +205,8 @@ class SemanticCommSystem:
         elif channel_type.lower() == 'rician':
             return RicianChannel(snr_db=snr_db, **kwargs)
         elif channel_type.lower() == 'lora':
-            return LoRaChannel(snr_db=snr_db, **kwargs)
+            # LoRa channel chỉ được điều khiển bởi snr_db, không truyền kwargs
+            return LoRaChannel(snr_db=snr_db)
         else:
             raise ValueError(f"Unknown channel type: {channel_type}")
     

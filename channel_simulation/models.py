@@ -154,70 +154,109 @@ class RicianChannel:
         return y * np.conj(h) / (np.abs(h) ** 2 + nv)
 
 
-@dataclass
 class LoRaChannel:
     """Simplified LoRa/LoRaWAN-like channel model.
 
-    This is not a full PHY model; it's intended to provide an IoT-flavored
-    channel with:
-    - deterministic path loss
-    - flat Rayleigh small-scale fading
-    - AWGN
-
-    The provided `snr_db` is interpreted as the SNR *at the receiver* for the
-    nominal (path-loss only) link; fading then causes additional variation.
+    This channel is controlled purely by SNR (consistent with AWGN/Rayleigh/Rician).
+    It models LoRa-like characteristics with:
+    - Flat Rayleigh small-scale fading (optional, mild)
+    - AWGN noise controlled by snr_db
+    
+    The `snr_db` parameter directly controls the noise level, ensuring fair
+    comparison with other channels in SNR sweep experiments.
+    
+    Any additional kwargs (distance, sf, tx_power) are ignored for backward
+    compatibility but do not affect the channel behavior.
     """
 
-    snr_db: float = 10.0
-    distance_m: float = 1000.0
-    frequency_hz: float = 868e6
-
-    h: np.ndarray | None = None
+    def __init__(self, snr_db: float = 10.0, **kwargs):
+        """Initialize LoRaChannel.
+        
+        Parameters:
+        -----------
+        snr_db : float
+            Signal-to-noise ratio in dB. This directly controls noise variance.
+        **kwargs
+            Ignored for backward compatibility (distance, sf, tx_power, etc.)
+        """
+        self.snr_db = float(snr_db)
+        self.h = None
 
     def set_snr(self, snr_db: float) -> None:
+        """Update SNR setting."""
         self.snr_db = float(snr_db)
-
-    def _path_loss_linear(self) -> float:
-        # Free-space path loss (FSPL) in dB: 20log10(d_km) + 20log10(f_MHz) + 32.44
-        d_km = max(1e-6, self.distance_m) / 1000.0
-        f_mhz = self.frequency_hz / 1e6
-        fspl_db = 20.0 * np.log10(d_km) + 20.0 * np.log10(f_mhz) + 32.44
-        # Convert to amplitude (not power)
-        return 10 ** (-fspl_db / 20.0)
 
     @property
     def noise_var(self) -> float:
-        # Use nominal received amplitude (path loss only) to set noise variance.
+        """Compute noise variance from SNR.
+        
+        Assumes unit average symbol energy, consistent with other channels.
+        """
         snr_lin = _snr_db_to_linear(self.snr_db)
-        a = self._path_loss_linear()
-        rx_power = (a ** 2) * 1.0  # assume unit tx symbol power
-        return rx_power / snr_lin
+        return 1.0 / snr_lin
 
     def _sample_fading(self, n: int) -> np.ndarray:
-        # Rayleigh small-scale fading CN(0,1)
+        """Sample Rayleigh small-scale fading CN(0,1).
+        
+        This provides mild multipath fading typical of LoRa channels.
+        The fading is normalized so E|h|^2 = 1.
+        """
         return (np.random.randn(n) + 1j * np.random.randn(n)) / np.sqrt(2.0)
 
     def transmit(self, tx_symbols: np.ndarray) -> Tuple[np.ndarray, Dict]:
+        """Transmit symbols through LoRa channel.
+        
+        Parameters:
+        -----------
+        tx_symbols : np.ndarray
+            Complex baseband transmit symbols
+            
+        Returns:
+        --------
+        rx_symbols : np.ndarray
+            Received symbols after channel
+        info : dict
+            Channel information including snr_db and noise_var
+        """
         tx = np.asarray(tx_symbols).astype(np.complex128)
-        a = self._path_loss_linear()
-        self.h = a * self._sample_fading(tx.size).reshape(tx.shape)
+        
+        # Apply mild Rayleigh fading (typical for LoRa multipath)
+        self.h = self._sample_fading(tx.size).reshape(tx.shape)
+        
+        # Generate AWGN noise based on SNR
         n = _complex_awgn(tx.shape, self.noise_var)
+        
+        # Received signal: h * tx + n
         rx = self.h * tx + n
+        
         info = {
             "channel": "lora",
             "snr_db": float(self.snr_db),
-            "distance_m": float(self.distance_m),
-            "frequency_hz": float(self.frequency_hz),
             "noise_var": float(self.noise_var),
         }
         return rx, info
 
     def equalize(self, rx_symbols: np.ndarray, method: str = "mmse") -> np.ndarray:
+        """Equalize received symbols to compensate for fading.
+        
+        Parameters:
+        -----------
+        rx_symbols : np.ndarray
+            Received symbols after channel
+        method : str
+            Equalization method: 'zf' (zero-forcing) or 'mmse' (minimum mean-square error)
+            
+        Returns:
+        --------
+        equalized : np.ndarray
+            Equalized symbols
+        """
         if self.h is None:
             return rx_symbols
         y = np.asarray(rx_symbols).astype(np.complex128)
         h = self.h
         if method.lower() == "zf":
             return y / (h + 1e-12)
+        # MMSE equalization
         nv = self.noise_var
         return y * np.conj(h) / (np.abs(h) ** 2 + nv)

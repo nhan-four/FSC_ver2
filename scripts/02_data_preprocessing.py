@@ -1,13 +1,16 @@
 """Step 2 – Clean and preprocess the FuzSemCom dataset."""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-from src.fuzzy_engine import SEMANTIC_CLASSES
-
+# Lấy đường dẫn thư mục gốc (parent của scripts) và thêm vào sys.path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.fuzzy_engine import SEMANTIC_CLASSES
 RAW_DATA = PROJECT_ROOT / "data" / "raw" / "Agriculture_dataset_with_metadata.csv"
 OUTPUT_CSV = PROJECT_ROOT / "data" / "processed" / "semantic_dataset_preprocessed.csv"
 STATS_FILE = PROJECT_ROOT / "data" / "processed" / "preprocessing_stats.txt"
