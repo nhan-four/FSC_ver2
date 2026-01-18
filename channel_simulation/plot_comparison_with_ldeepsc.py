@@ -1,23 +1,12 @@
-"""
-Plot comparison between FuzSemCom and L-DeepSC
-==============================================
-Tạo biểu đồ so sánh FuzSemCom (4 kênh) với L-DeepSC baseline.
-L-DeepSC chỉ có kết quả tại SNR=10dB nên sẽ vẽ như điểm/đường ngang.
-"""
-
 import json
-import numpy as np
 from pathlib import Path
-from datetime import datetime
-
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Paths
-RESULTS_DIR = Path(__file__).parent / "results"
+ROOT = Path(__file__).resolve().parents[1]
 
-# Use latest available full_comparison_*.json by default.
+# Auto-detect latest full_comparison JSON
 def _latest_full_comparison_json(results_dir: Path) -> Path:
     candidates = sorted(results_dir.glob("full_comparison_*.json"))
     if not candidates:
@@ -26,264 +15,204 @@ def _latest_full_comparison_json(results_dir: Path) -> Path:
         )
     return candidates[-1]
 
-
-FUZSEMCOM_JSON = _latest_full_comparison_json(RESULTS_DIR)
-
-# Intrinsic encoder accuracies (clean test)
-INTRINSIC_FUZSEMCOM_ACCURACY = 0.9499
-INTRINSIC_LDEEPSC_ACCURACY = 0.8808
-
-# L-DeepSC results (system-level) at SNR=10dB (after channel)
-LDEEPSC_ACCURACY_AFTER_CHANNEL = 0.1838   # 18.38% @ 10dB (baseline)
-LDEEPSC_SNR = 10.0
-
-
-def load_fuzsemcom_results():
-    """Load FuzSemCom channel comparison results"""
-    with open(FUZSEMCOM_JSON, 'r') as f:
-        data = json.load(f)
-    return data
-
-
-def plot_accuracy_vs_snr_with_ldeepsc(fuzsemcom_data, output_path):
-    """
-    Plot Semantic Accuracy vs SNR for all channels + L-DeepSC baseline
-    """
-    fig, ax = plt.subplots(figsize=(12, 7))
-    
-    # Colors and markers for FuzSemCom channels
-    colors = {
-        'awgn': '#2196F3',      # Blue
-        'rayleigh': '#F44336',  # Red
-        'rician': '#4CAF50',    # Green
-        'lora': '#FF9800'       # Orange
-    }
-    markers = {'awgn': 'o', 'rayleigh': 's', 'rician': '^', 'lora': 'D'}
-    
-    # Plot FuzSemCom channels
-    for ch_type in ['awgn', 'rayleigh', 'rician', 'lora']:
-        data = fuzsemcom_data['results'][ch_type]
-        snr = data['snr_db']
-        # IMPORTANT: plotted semantic accuracy = simulated_symbol_accuracy * intrinsic_encoder_accuracy
-        acc = [x * INTRINSIC_FUZSEMCOM_ACCURACY * 100 for x in data['semantic_accuracy']]
-        ax.plot(snr, acc, f'-{markers[ch_type]}', color=colors[ch_type],
-                linewidth=2.5, markersize=9, label=f'FuzSemCom ({ch_type.upper()})')
-
-    # Upper bounds (clean / intrinsic)
-    ax.axhline(
-        y=INTRINSIC_FUZSEMCOM_ACCURACY * 100,
-        color='gray',
-        linestyle='--',
-        linewidth=2,
-        alpha=0.7,
-        label=f'Upper bound (FuzSemCom clean): {INTRINSIC_FUZSEMCOM_ACCURACY*100:.2f}%'
-    )
-    ax.axhline(
-        y=INTRINSIC_LDEEPSC_ACCURACY * 100,
-        color='black',
-        linestyle='--',
-        linewidth=2,
-        alpha=0.6,
-        label=f'Upper bound (L-DeepSC clean): {INTRINSIC_LDEEPSC_ACCURACY*100:.2f}%'
-    )
-    
-    # Plot L-DeepSC (after channel) at SNR=10 as horizontal dotted line + marker
-    ax.axhline(
-        y=LDEEPSC_ACCURACY_AFTER_CHANNEL * 100,
-        color='#795548',
-        linestyle=':',
-        linewidth=2,
-        alpha=0.7,
-        label=f'L-DeepSC (after channel, SNR=10dB): {LDEEPSC_ACCURACY_AFTER_CHANNEL*100:.1f}%'
-    )
-    ax.scatter(
-        [LDEEPSC_SNR],
-        [LDEEPSC_ACCURACY_AFTER_CHANNEL * 100],
-        color='#795548',
-        s=150,
-        marker='*',
-        zorder=5,
-        edgecolors='white',
-        linewidths=1.5,
-    )
-    
-    # Styling
-    ax.set_xlabel('SNR (dB)', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Semantic Accuracy (%)', fontsize=14, fontweight='bold')
-    ax.set_title('FuzSemCom vs L-DeepSC: Semantic Accuracy over Different Channels', 
-                 fontsize=16, fontweight='bold', pad=15)
-    ax.grid(True, alpha=0.3, linestyle='-')
-    ax.legend(fontsize=10, loc='lower right', framealpha=0.95)
-    ax.set_ylim(0, 105)
-    ax.set_xlim(-1, 31)
-    ax.set_xticks([0, 5, 10, 15, 20, 25, 30])
-    
-    # Add annotation
-    ax.annotate('L-DeepSC degrades\nsignificantly after\nchannel transmission', 
-                xy=(10, LDEEPSC_ACCURACY_AFTER_CHANNEL * 100 + 3),
-                xytext=(15, 35), fontsize=9,
-                arrowprops=dict(arrowstyle='->', color='#795548', lw=1.5),
-                color='#795548', fontweight='bold')
-    
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"Saved: {output_path}")
-
-
-def plot_bar_comparison_at_snr10(fuzsemcom_data, output_path):
-    """
-    Bar chart comparing all methods at SNR=10dB
-    """
-    fig, ax = plt.subplots(figsize=(12, 7))
-    
-    # Get FuzSemCom accuracies at SNR=10dB (index 2 in snr_range [0,5,10,15,20,25,30])
-    snr_idx = 2  # SNR=10dB
-    
-    methods = []
-    accuracies = []
-    colors_list = []
-    
-    # FuzSemCom channels
-    channel_colors = {
-        'awgn': '#2196F3',
-        'rayleigh': '#F44336', 
-        'rician': '#4CAF50',
-        'lora': '#FF9800'
-    }
-    
-    for ch_type in ['awgn', 'rayleigh', 'rician', 'lora']:
-        acc = (
-            fuzsemcom_data['results'][ch_type]['semantic_accuracy'][snr_idx]
-            * INTRINSIC_FUZSEMCOM_ACCURACY
-            * 100
+# Auto-detect latest baseline_comparison JSON
+def _latest_baseline_comparison_json(results_dir: Path) -> Path:
+    candidates = sorted(results_dir.glob("baseline_comparison_*.json"))
+    if not candidates:
+        raise FileNotFoundError(
+            f"No baseline_comparison_*.json found in {results_dir}."
         )
-        methods.append(f'FuzSemCom\n({ch_type.upper()})')
-        accuracies.append(acc)
-        colors_list.append(channel_colors[ch_type])
-    
-    # L-DeepSC upper bound (clean) + after-channel point
-    methods.append('L-DeepSC\n(clean upper)')
-    accuracies.append(INTRINSIC_LDEEPSC_ACCURACY * 100)
-    colors_list.append('#9C27B0')
-    
-    methods.append('L-DeepSC\n(after channel)')
-    accuracies.append(LDEEPSC_ACCURACY_AFTER_CHANNEL * 100)
-    colors_list.append('#795548')
-    
-    # Create bars
-    x = np.arange(len(methods))
-    bars = ax.bar(x, accuracies, color=colors_list, edgecolor='white', linewidth=1.5)
-    
-    # Add value labels on bars
-    for bar, acc in zip(bars, accuracies):
-        height = bar.get_height()
-        ax.annotate(f'{acc:.1f}%',
-                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 5),
-                    textcoords="offset points",
-                    ha='center', va='bottom', fontsize=11, fontweight='bold')
-    
-    # Styling
-    ax.set_xlabel('Method', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Semantic Accuracy (%)', fontsize=14, fontweight='bold')
-    ax.set_title('Comparison at SNR = 10 dB: FuzSemCom vs L-DeepSC', 
-                 fontsize=16, fontweight='bold', pad=15)
-    ax.set_xticks(x)
-    ax.set_xticklabels(methods, fontsize=10)
-    ax.set_ylim(0, 115)
-    ax.grid(True, alpha=0.3, axis='y')
-    
-    # Add horizontal line at 100%
-    ax.axhline(y=100, color='gray', linestyle='--', linewidth=1, alpha=0.5)
-    
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"Saved: {output_path}")
+    return candidates[-1]
+
+FUZSEMCOM_JSON = _latest_full_comparison_json(ROOT / "channel_simulation" / "results")
+LDEEPSC_JSON = ROOT / "experiments" / "l_deepsc_system_opt" / "results" / "l_deepsc_system_opt_results.json"
+BASELINE_JSON = _latest_baseline_comparison_json(ROOT / "experiments" / "baseline_results")
+OUT_PNG = ROOT / "channel_simulation" / "results" / "comparison_acc_vs_snr_final.png"
 
 
-def plot_efficiency_comparison(output_path):
+def _load_json(path: Path) -> dict:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing file: {path}")
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def _pick_first_key(d: dict, candidates: list[str]) -> str:
+    for k in candidates:
+        if k in d:
+            return k
+    raise KeyError(f"None of keys found: {candidates}. Available keys: {list(d.keys())}")
+
+
+def _clamp01(x: float) -> float:
+    return max(0.0, min(1.0, float(x)))
+
+
+def _extract_fuzsemcom_rayleigh(fsc: dict):
     """
-    Bar chart comparing bandwidth efficiency
+    Return (snr_list, raw_symbol_acc_list, used_key)
+    Note: In many of our JSONs, this is misnamed 'semantic_accuracy' but actually is symbol correctness.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    results = fsc.get("results", fsc)
+    if "rayleigh" not in results:
+        # try case-insensitive
+        key = None
+        for k in results.keys():
+            if str(k).lower() == "rayleigh":
+                key = k
+                break
+        if key is None:
+            raise KeyError(f"Cannot find rayleigh in results keys: {list(results.keys())}")
+        ray = results[key]
+    else:
+        ray = results["rayleigh"]
+
+    snr_key = _pick_first_key(ray, ["snr_db", "snr", "snr_list"])
+    acc_key = _pick_first_key(ray, [
+        "symbol_accuracy",
+        "channel_symbol_accuracy",
+        "decoded_symbol_accuracy",
+        "semantic_accuracy",  # often misnamed in existing files
+        "accuracy",
+        "acc",
+    ])
+
+    snr = list(map(float, ray[snr_key]))
+    raw = list(map(float, ray[acc_key]))
+    if len(snr) != len(raw):
+        raise ValueError(f"len(snr)={len(snr)} != len(acc)={len(raw)}")
+
+    return snr, raw, acc_key
+
+
+def _extract_ldeepsc_accuracy_after(ld: dict):
+    """
+    Support schema:
+    - {"results_by_snr": {"0": {"accuracy_after": ...}, "5": {...}}}
+    """
+    if "results_by_snr" not in ld or not isinstance(ld["results_by_snr"], dict):
+        raise KeyError("Expected L-DeepSC JSON to contain dict key 'results_by_snr'")
+
+    rb = ld["results_by_snr"]
+    snr = sorted([float(k) for k in rb.keys()])
+
+    acc = []
+    for s in snr:
+        k_int = str(int(s))
+        row = rb[k_int] if k_int in rb else rb[str(s)]
+        acc_key = _pick_first_key(row, ["accuracy_after", "acc_after", "semantic_accuracy_after", "accuracy"])
+        acc.append(float(row[acc_key]))
+
+    return snr, acc
+
+
+def _extract_fuzsemcom_intrinsic_acc(baseline: dict) -> float:
+    """
+    Extract FuzSemCom intrinsic accuracy from baseline comparison JSON.
+    Looks for "FuzSemCom (Ours)" -> "accuracy"
+    """
+    fsc_key = None
+    for k in baseline.keys():
+        if "fuzsemcom" in str(k).lower() or "ours" in str(k).lower():
+            fsc_key = k
+            break
     
-    # Subplot 1: Bandwidth
-    ax = axes[0]
-    methods = ['FuzSemCom', 'L-DeepSC']
-    bandwidth = [2, 64]  # bytes per sample
-    colors = ['#4CAF50', '#9C27B0']
+    if fsc_key is None:
+        raise KeyError(f"Cannot find FuzSemCom entry in baseline JSON. Available keys: {list(baseline.keys())}")
     
-    bars = ax.bar(methods, bandwidth, color=colors, edgecolor='white', linewidth=2)
-    for bar, bw in zip(bars, bandwidth):
-        ax.annotate(f'{bw} bytes',
-                    xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-                    xytext=(0, 5), textcoords="offset points",
-                    ha='center', va='bottom', fontsize=14, fontweight='bold')
+    fsc_data = baseline[fsc_key]
+    if "accuracy" not in fsc_data:
+        raise KeyError(f"FuzSemCom entry '{fsc_key}' does not contain 'accuracy' key")
     
-    ax.set_ylabel('Bandwidth (bytes/sample)', fontsize=13, fontweight='bold')
-    ax.set_title('Bandwidth Comparison', fontsize=14, fontweight='bold')
-    ax.set_ylim(0, 80)
-    ax.grid(True, alpha=0.3, axis='y')
+    return float(fsc_data["accuracy"])
+
+
+def _extract_ldeepsc_clean_acc(ld: dict) -> float:
+    """
+    Extract L-DeepSC clean accuracy from L-DeepSC JSON.
+    Uses accuracy_before (which is constant across all SNR values).
+    """
+    if "results_by_snr" not in ld or not isinstance(ld["results_by_snr"], dict):
+        raise KeyError("Expected L-DeepSC JSON to contain dict key 'results_by_snr'")
     
-    # Subplot 2: Compression Ratio
-    ax = axes[1]
-    original_size = 20  # 5 sensors × 4 bytes
-    compression = [original_size / 2, original_size / 64]  # compression ratio
+    # Get accuracy_before from any SNR (they're all the same)
+    rb = ld["results_by_snr"]
+    first_snr = sorted([float(k) for k in rb.keys()])[0]
+    first_key = str(int(first_snr))
+    row = rb[first_key] if first_key in rb else rb[str(first_snr)]
     
-    bars = ax.bar(methods, compression, color=colors, edgecolor='white', linewidth=2)
-    for bar, cr in zip(bars, compression):
-        ax.annotate(f'{cr:.1f}x',
-                    xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-                    xytext=(0, 5), textcoords="offset points",
-                    ha='center', va='bottom', fontsize=14, fontweight='bold')
-    
-    ax.set_ylabel('Compression Ratio', fontsize=13, fontweight='bold')
-    ax.set_title('Compression Efficiency', fontsize=14, fontweight='bold')
-    ax.set_ylim(0, 12)
-    ax.grid(True, alpha=0.3, axis='y')
-    
-    plt.suptitle('FuzSemCom vs L-DeepSC: Efficiency Comparison', 
-                 fontsize=16, fontweight='bold', y=1.02)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"Saved: {output_path}")
+    acc_key = _pick_first_key(row, ["accuracy_before", "acc_before", "semantic_accuracy_before", "accuracy"])
+    return float(row[acc_key])
 
 
 def main():
-    print("=" * 60)
-    print("Creating comparison plots: FuzSemCom vs L-DeepSC")
-    print("=" * 60)
-    
-    # Load FuzSemCom results
-    fuzsemcom_data = load_fuzsemcom_results()
-    print(f"Loaded FuzSemCom results: {len(fuzsemcom_data['results'])} channels")
-    
-    # Timestamp for output files
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Plot 1: Accuracy vs SNR with L-DeepSC baseline
-    output1 = RESULTS_DIR / f"comparison_fuzsemcom_vs_ldeepsc_snr_{timestamp}.png"
-    plot_accuracy_vs_snr_with_ldeepsc(fuzsemcom_data, output1)
-    
-    # Plot 2: Bar comparison at SNR=10dB
-    output2 = RESULTS_DIR / f"comparison_bar_snr10_{timestamp}.png"
-    plot_bar_comparison_at_snr10(fuzsemcom_data, output2)
-    
-    # Plot 3: Efficiency comparison
-    output3 = RESULTS_DIR / f"comparison_efficiency_{timestamp}.png"
-    plot_efficiency_comparison(output3)
-    
-    print("\n" + "=" * 60)
-    print("DONE! Created 3 comparison plots:")
-    print(f"  1. {output1.name}")
-    print(f"  2. {output2.name}")
-    print(f"  3. {output3.name}")
-    print("=" * 60)
+    fsc = _load_json(FUZSEMCOM_JSON)
+    ld = _load_json(LDEEPSC_JSON)
+    baseline = _load_json(BASELINE_JSON)
+
+    # Extract intrinsic/clean accuracies from JSON files
+    fsc_intrinsic_acc = _extract_fuzsemcom_intrinsic_acc(baseline)
+    ldeepsc_clean_acc = _extract_ldeepsc_clean_acc(ld)
+
+    # --- FuzSemCom: Effective semantic accuracy (Rayleigh) ---
+    snr_fsc, raw_symbol_acc, used_key = _extract_fuzsemcom_rayleigh(fsc)
+    eff_fsc = [_clamp01(x) * fsc_intrinsic_acc for x in raw_symbol_acc]
+
+    # --- L-DeepSC curve: accuracy_after ---
+    snr_ld, acc_after = _extract_ldeepsc_accuracy_after(ld)
+    acc_after = [_clamp01(x) for x in acc_after]
+
+    fig, ax = plt.subplots(figsize=(10.5, 6.0))
+
+    ax.plot(
+        snr_fsc,
+        eff_fsc,
+        marker="s",
+        linewidth=2.2,
+        label=f"FuzSemCom (Rayleigh) Effective = ({used_key}) x {fsc_intrinsic_acc:.4f}",
+    )
+    ax.plot(
+        snr_ld,
+        acc_after,
+        marker="o",
+        linewidth=2.2,
+        label="L-DeepSC accuracy_after",
+    )
+
+    # Upper bounds (clean) - values extracted from JSON
+    ax.axhline(
+        y=fsc_intrinsic_acc,
+        linestyle="--",
+        linewidth=2.0,
+        label=f"FuzSemCom Upper Bound (Clean) = {fsc_intrinsic_acc:.4f}",
+    )
+    ax.axhline(
+        y=ldeepsc_clean_acc,
+        linestyle="--",
+        linewidth=2.0,
+        label=f"L-DeepSC Upper Bound (Clean) = {ldeepsc_clean_acc:.4f}",
+    )
+
+    ax.set_title("Effective Semantic Accuracy vs SNR (Fig. 3)")
+    ax.set_xlabel("SNR (dB)")
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(0.0, 1.0)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="lower right", framealpha=0.95)
+
+    fig.tight_layout()
+    OUT_PNG.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(OUT_PNG, dpi=170)
+    plt.close(fig)
+
+    print(f"[OK] Saved: {OUT_PNG}")
+    print(f"[INFO] FuzSemCom used accuracy field: {used_key}")
+    print(f"[INFO] FuzSemCom intrinsic accuracy: {fsc_intrinsic_acc:.4f} (from baseline JSON)")
+    print(f"[INFO] L-DeepSC clean accuracy: {ldeepsc_clean_acc:.4f} (from L-DeepSC JSON)")
+    print(f"[INFO] FuzSemCom JSON: {FUZSEMCOM_JSON}")
+    print(f"[INFO] L-DeepSC JSON: {LDEEPSC_JSON}")
+    print(f"[INFO] Baseline JSON: {BASELINE_JSON}")
 
 
 if __name__ == "__main__":
     main()
-

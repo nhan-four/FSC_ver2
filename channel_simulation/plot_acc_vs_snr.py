@@ -15,12 +15,28 @@ import matplotlib.pyplot as plt
 
 # Paths
 RESULTS_DIR = Path(__file__).parent / "results"
-FUZSEMCOM_JSON = RESULTS_DIR / "full_comparison_20251217_220929.json"
-LDEEPSC_JSON = Path(__file__).parent.parent / "experiments" / "l_deepsc_system_opt" / "results" / "l_deepsc_system_opt_results.json"
+ROOT = Path(__file__).parent.parent
+
+# Auto-detect latest full_comparison JSON
+def _latest_full_comparison_json(results_dir: Path) -> Path:
+    candidates = sorted(results_dir.glob("full_comparison_*.json"))
+    if not candidates:
+        raise FileNotFoundError(
+            f"No full_comparison_*.json found in {results_dir}. Run run_full_comparison.py first."
+        )
+    return candidates[-1]
+
+FUZSEMCOM_JSON = _latest_full_comparison_json(RESULTS_DIR)
+LDEEPSC_JSON = ROOT / "experiments" / "l_deepsc_system_opt" / "results" / "l_deepsc_system_opt_results.json"
 
 
 def load_data():
     """Load FuzSemCom và L-DeepSC results"""
+    if not FUZSEMCOM_JSON.exists():
+        raise FileNotFoundError(f"FuzSemCom JSON not found: {FUZSEMCOM_JSON}")
+    if not LDEEPSC_JSON.exists():
+        raise FileNotFoundError(f"L-DeepSC JSON not found: {LDEEPSC_JSON}")
+    
     with open(FUZSEMCOM_JSON, 'r') as f:
         fuzsemcom = json.load(f)
     
